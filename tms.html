@@ -1,0 +1,1315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TMS Prototype</title>
+  <style>
+    :root {
+      --burgundy: #6F2C35;
+      --moon-mist: #E8DFC8;
+      --rose-white: #FBF7F4;
+      --linen: #EBE4DA;
+      --soft-black: #121212;
+      --modal-bg: rgba(18, 18, 18, 0.13);
+      --danger: #b31b1b;
+      --action: #b39864;
+    }
+    html, body {
+      height: 100%;
+      margin: 0; padding: 0;
+      background: var(--rose-white);
+    }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      color: var(--soft-black);
+      margin: 0;
+      padding: 0;
+      background: var(--rose-white);
+      box-sizing: border-box;
+      overscroll-behavior-y: contain;
+      -webkit-overflow-scrolling: touch;
+      touch-action: manipulation;
+    }
+    .container {
+      max-width: 430px;
+      margin: 0 auto;
+      min-height: 100vh;
+      background: var(--rose-white);
+      padding: 0;
+      box-sizing: border-box;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    /* ---------- SLIDE ANIMATION ---------- */
+    .page {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      top: 0; left: 0;
+      background: var(--rose-white);
+      transition: transform 0.4s cubic-bezier(0.43,0.13,0.23,0.96), opacity 0.28s;
+      will-change: transform, opacity;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .page.active {
+      z-index: 2;
+      pointer-events: auto;
+      opacity: 1;
+      transform: translateX(0%);
+    }
+    .page.inactive-left {
+      z-index: 1;
+      pointer-events: none;
+      opacity: 0.95;
+      transform: translateX(-55%);
+    }
+    .page.inactive-right {
+      z-index: 1;
+      pointer-events: none;
+      opacity: 0.95;
+      transform: translateX(55%);
+    }
+    .header, .chat-header {
+      font-size: 2rem;
+      font-weight: 600;
+      color: var(--burgundy);
+      letter-spacing: 1px;
+      background: var(--rose-white);
+      width: 100%;
+      z-index: 30;
+      display: flex;
+      align-items: center;
+      padding: 24px 0 10px 0;
+      position: sticky;
+      top: 0;
+    }
+    .header-back, .chat-header-back {
+      font-size: 2.1rem;
+      font-weight: 800;
+      color: var(--burgundy);
+      cursor: pointer;
+      margin-left: 20px;
+      margin-right: 18px;
+      user-select: none;
+      line-height: 1;
+    }
+    .header-title, .chat-header-title {
+      font-size: 1.15em;
+      font-weight: 600;
+      color: var(--burgundy);
+      flex: 1;
+      text-align: left;
+      letter-spacing: 1px;
+    }
+    .header-emps {
+      padding: 24px 0 10px 0;
+      background: var(--rose-white);
+      border-bottom: none;
+    }
+    .search-bar-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 22px;
+      margin-top: 0;
+      padding: 0 8px;
+    }
+    .search-bar-row input[type="text"] {
+      flex: 1;
+      padding: 10px 14px;
+      border: none;
+      border-radius: 999px;
+      font-size: 1.1rem;
+      background: var(--moon-mist);
+      outline: none;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .search-bar-row button {
+      padding: 0 22px;
+      background: var(--burgundy);
+      color: var(--moon-mist);
+      border: none;
+      border-radius: 999px;
+      font-size: 1.08rem;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background 0.18s;
+    }
+    .search-bar-row button:hover {
+      background: #922940;
+    }
+    .list-box {
+      background: var(--moon-mist);
+      border-radius: 20px;
+      box-shadow: 0 2px 8px rgba(111,44,53,0.05);
+      padding: 14px 0;
+      min-height: 90px;
+      margin-bottom: 15px;
+      margin-top: 0;
+      overflow: visible;
+    }
+
+    /* ---- Swipe Actions Pattern ---- */
+    .swipe-wrap {
+      position: relative;
+      margin: 7px 11px;
+      height: 56px;
+      border-radius: 11px;
+      overflow: visible;
+    }
+    .swipe-actions {
+      position: absolute;
+      top: 0; bottom: 0;
+      right: 0;
+      display: flex;
+      height: 100%;
+      z-index: 1;
+      align-items: stretch;
+      transition: opacity 0.13s;
+      pointer-events: none;
+      opacity: 0;
+    }
+    .swipe-wrap.swiped .swipe-actions {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .swipe-action-btn {
+      min-width: 64px;
+      padding: 0 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.03rem;
+      font-weight: 600;
+      color: #fff;
+      border: none;
+      outline: none;
+      cursor: pointer;
+      border-radius: 0;
+      transition: background 0.14s;
+      pointer-events: auto;
+      height: 100%;
+    }
+    .swipe-edit { background: var(--burgundy); }
+    .swipe-delete { background: var(--danger); }
+    .swipe-clear { background: var(--action); color: #fff; }
+    .swipe-action-btn:not(:last-child) { border-right: 1px solid #fff2; }
+
+    .item-row {
+      position: absolute;
+      left: 0; right: 0; top: 0; bottom: 0;
+      background: var(--moon-mist);
+      border: 1.2px solid var(--burgundy);
+      border-radius: 11px;
+      box-sizing: border-box;
+      overflow: hidden;
+      padding: 14px 16px 14px 20px;
+      display: flex;
+      align-items: center;
+      font-size: 1.12rem;
+      user-select: none;
+      cursor: pointer;
+      transition: background 0.18s, transform 0.25s cubic-bezier(.23,.72,.47,1.3);
+      justify-content: space-between;
+      touch-action: pan-y;
+      z-index: 2;
+      background-clip: padding-box;
+      will-change: transform;
+    }
+    .swipe-wrap.swiped .item-row {
+      transition: transform 0.25s cubic-bezier(.23,.72,.47,1.3);
+    }
+
+    .item-label {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .item-arrow {
+      font-size: 1.4rem;
+      color: var(--burgundy);
+      margin-left: 16px;
+      flex-shrink: 0;
+      font-weight: bold;
+      user-select: none;
+      cursor: pointer;
+      transition: color 0.15s;
+    }
+    .item-arrow:hover { color: #922940; }
+
+    /* ---- Modal, Chat, etc: Keep your original styles from here on... ---- */
+    .modal-bg {
+      position:fixed;top:0;left:0;width:100vw;height:100vh;display:none;
+      align-items:center;justify-content:center;z-index:99;background:var(--modal-bg);
+    }
+    .modal-bg.active { display: flex; }
+    .modal-box {
+      background: var(--rose-white);
+      color: var(--soft-black);
+      padding: 32px 28px 23px 28px;
+      border-radius: 18px;
+      box-shadow: 0 8px 28px rgba(111,44,53,0.12);
+      text-align: center;
+      max-width: 92vw;
+      min-width: 250px;
+      min-height: 112px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+    #addEditInput {
+      width: 240px;
+      min-width: 140px;
+      font-size: 1.13rem;
+      padding: 11px 12px;
+      border: 1.5px solid var(--burgundy);
+      border-radius: 12px;
+      margin-top: 8px;
+      margin-bottom: 8px;
+      background: var(--linen);
+      transition: border 0.14s;
+      box-sizing: border-box;
+      outline: none;
+      text-align: left;
+      min-height: 38px;
+    }
+    #addEditInput:focus {
+      border: 1.5px solid var(--burgundy);
+      background: #f5ece0;
+    }
+    .modal-buttons {
+      margin-top: 20px;
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .modal-buttons button {
+      background: var(--burgundy);
+      color: var(--rose-white);
+      font-size: 1rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 13px;
+      padding: 11px 32px;
+      cursor: pointer;
+      margin: 0 2px;
+      box-shadow: 0 1px 3px rgba(111,44,53,0.06);
+      transition: background 0.16s;
+    }
+    .modal-buttons button:hover {
+      background: #922940;
+    }
+    .modal-buttons button:last-child {
+      background: var(--moon-mist);
+      color: var(--burgundy);
+    }
+    .modal-error { color: #b31b1b; font-size: 1rem; margin-bottom: 5px; }
+
+    /* ---- CHAT AREA ---- */
+    .chat-page-body {
+      flex: 1 1 0%;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      min-height: 0;
+      height: 100dvh;
+      padding-bottom: 0;
+      background: #ddd2d2;
+      border-radius: 24px 24px 0 0;
+      box-shadow: none;
+      position: relative;
+    }
+    .chat-box {
+      flex: 1 1 auto;
+      min-height: 0;
+      max-height: none;
+      height: 0;
+      overflow-y: auto;
+      padding: 0 0 20px 0;
+      background: transparent;
+      border-radius: 0;
+      margin-bottom: 0;
+    }
+    /* ---- Chat Date Divider ---- */
+    .chat-date-divider {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 28px 0 12px 0;
+      position: relative;
+      z-index: 2;
+    }
+    .chat-date-divider-inner {
+      background: var(--rose-white);
+      color: var(--burgundy);
+      font-size: 0.99rem;
+      font-weight: 600;
+      border-radius: 22px;
+      padding: 7px 18px 7px 18px;
+      border: 1.5px solid var(--burgundy);
+      box-shadow: 0 1px 7px rgba(111,44,53,0.07);
+      letter-spacing: 0.04em;
+      min-width: 112px;
+      text-align: center;
+    }
+    .chat-msg-row {
+      margin: 20px 0 15px 0;
+      display: flex;
+      justify-content: flex-end;
+      position: relative;
+    }
+    .chat-msg {
+      max-width: 68%;
+      padding: 14px 18px 13px 18px;
+      border-radius: 18px;
+      box-shadow: 0 1px 4px rgba(111,44,53,0.05);
+      font-size: 1.07rem;
+      line-height: 1.45;
+      word-break: break-word;
+      position: relative;
+      text-align: left;
+      margin-right: 12px;
+      margin-left: 2px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+    .chat-task {
+      background: var(--moon-mist);
+      color: var(--soft-black);
+      border-bottom-right-radius: 2px;
+      border-bottom-left-radius: 18px;
+    }
+    .chat-reminder {
+      background: var(--burgundy);
+      color: var(--rose-white);
+      border-bottom-right-radius: 2px;
+      border-bottom-left-radius: 18px;
+    }
+    .chat-msg-heading {
+      font-size: 0.89rem;
+      font-weight: 700;
+      margin-bottom: 3px;
+      align-self: flex-end;
+      letter-spacing: 0.04em;
+      padding-bottom: 2px;
+    }
+    .chat-task .chat-msg-heading { color: var(--burgundy); }
+    .chat-reminder .chat-msg-heading { color: var(--moon-mist); }
+    .chat-time {
+      display: block;
+      font-size: 0.84rem;
+      margin-top: 4px;
+      color: #888;
+      text-align: right;
+      align-self: flex-end;
+    }
+    /* ---- BOTTOM INPUT AREA ---- */
+    .chat-input-row {
+      position: sticky;
+      left: 0; right: 0;
+      bottom: 0;
+      width: 100%;
+      margin: 0 auto;
+      padding: 0;
+      background: transparent;
+      border: none;
+      display: flex;
+      flex-direction: column;
+      z-index: 5;
+      gap: 7px;
+      min-height: 56px;
+      box-shadow: none;
+      border-radius: 0;
+      align-items: stretch;
+    }
+    .chat-input-inner-card {
+      background: var(--rose-white);
+      border-radius: 24px;
+      box-shadow: 0 2px 8px rgba(111,44,53,0.09);
+      padding: 16px 16px 13px 16px;
+      margin: 0 7px 8px 7px;
+      display: flex;
+      flex-direction: column;
+      gap: 13px;
+      position: relative;
+      width: auto;
+    }
+    .chat-type-switch-row {
+      display: flex;
+      flex-direction: row;
+      gap: 10px;
+      margin-bottom: 0;
+      width: 100%;
+    }
+    .chat-type-switch {
+      background: var(--moon-mist);
+      color: var(--burgundy);
+      border: none;
+      font-size: 1rem;
+      border-radius: 11px;
+      padding: 7px 22px;
+      cursor: pointer;
+      font-weight: 600;
+      outline: none;
+      transition: background 0.13s, color 0.13s;
+      margin: 0;
+      flex: 1 1 0;
+    }
+    .chat-type-switch.active {
+      background: var(--burgundy);
+      color: var(--rose-white);
+    }
+    .chat-input-box-row {
+      display: flex;
+      flex-direction: row;
+      gap: 12px;
+      width: 100%;
+      align-items: flex-end;
+    }
+    .chat-input {
+      flex: 1;
+      min-height: 38px;
+      max-height: 110px;
+      font-size: 1.09rem;
+      border: none;
+      border-radius: 15px;
+      background: var(--moon-mist);
+      padding: 13px 16px;
+      outline: none;
+      resize: none;
+      box-shadow: none;
+      margin: 0;
+      width: 100%;
+    }
+    .chat-send-btn {
+      padding: 0 22px;
+      background: var(--burgundy);
+      color: var(--rose-white);
+      border: none;
+      border-radius: 999px;
+      font-size: 1.07rem;
+      cursor: pointer;
+      font-weight: 600;
+      min-width: 54px;
+      min-height: 38px;
+      height: 38px;
+      margin-left: 0;
+      transition: background 0.18s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    .chat-send-btn:hover {
+      background: #922940;
+    }
+    @media (max-width: 480px) {
+      .container { padding-bottom: 0; min-height: 100dvh; }
+      .chat-input-row { min-height: 56px; border-radius: 0; }
+      .chat-input-inner-card { border-radius: 16px; margin: 0 2px 8px 2px; }
+      .chat-msg { max-width: 83vw; }
+      .header, .chat-header { font-size: 1.1rem; padding: 18px 0 7px 0; }
+      .header-back, .chat-header-back { font-size: 1.5rem; margin-left: 10px; margin-right: 8px; }
+    }
+    .chat-action-popup {
+      position: absolute;
+      left: -100px; /* will be adjusted by JS for RTL/positioning */
+      top: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background: var(--moon-mist);
+      border-radius: 18px;
+      box-shadow: 0 2px 8px rgba(111,44,53,0.09);
+      padding: 13px 14px 13px 14px;
+      z-index: 100;
+      min-width: 76px;
+      align-items: stretch;
+    }
+    .chat-action-btn {
+      border: none;
+      border-radius: 10px;
+      font-size: 1.08rem;
+      font-weight: 600;
+      padding: 9px 0;
+      cursor: pointer;
+      transition: background 0.16s, color 0.16s;
+      margin: 0;
+      outline: none;
+    }
+    .chat-action-edit {
+      background: #6d8450;
+      color: #fff;
+    }
+    .chat-action-edit:hover {
+      background: #56703b;
+    }
+    .chat-action-delete {
+      background: #be4350;
+      color: #fff;
+    }
+    .chat-action-delete:hover {
+      background: #a02125;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Companies Page -->
+    <div id="companiesPage" class="page active">
+      <div class="header">
+        <span class="header-back" id="companiesBackBtn" style="visibility:hidden;">&#60;</span>
+        <span class="header-title">Companies</span>
+      </div>
+      <div class="search-bar-row">
+        <input type="text" id="companySearchInput" placeholder="Search companies..." autocomplete="off"/>
+        <button id="companyAddBtn">Add</button>
+      </div>
+      <div class="list-box" id="companyList"></div>
+    </div>
+    <!-- Employees Page -->
+    <div id="employeesPage" class="page inactive-right">
+      <div class="header header-emps">
+        <span class="header-back" id="empBackBtn">&#60;</span>
+        <span class="header-title" id="empCompanyTitle"></span>
+      </div>
+      <div class="search-bar-row">
+        <input type="text" id="employeeSearchInput" placeholder="Search employees..." autocomplete="off"/>
+        <button id="employeeAddBtn">Add</button>
+      </div>
+      <div class="list-box" id="employeeList"></div>
+    </div>
+    <!-- Chat Page -->
+    <div id="chatPage" class="page inactive-right">
+      <div class="chat-header">
+        <span class="chat-header-back" id="chatBackBtn">&#60;</span>
+        <span class="chat-header-title" id="chatEmpName"></span>
+      </div>
+      <div class="chat-page-body" id="chatPageBody">
+        <div class="chat-box" id="chatBox"></div>
+        <form class="chat-input-row" id="chatInputRow" autocomplete="off">
+          <div class="chat-input-inner-card">
+            <div class="chat-type-switch-row">
+              <button type="button" class="chat-type-switch" id="typeTaskBtn">Task</button>
+              <button type="button" class="chat-type-switch" id="typeReminderBtn">Reminder</button>
+            </div>
+            <div class="chat-input-box-row">
+              <textarea class="chat-input" id="chatInput" placeholder="Enter message..." required rows="1"></textarea>
+              <button type="submit" class="chat-send-btn">Send</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <!-- Add/Edit Modal -->
+  <div class="modal-bg" id="addEditModalBg">
+    <div class="modal-box">
+      <div id="addEditModalTitle">Add</div>
+      <div id="addEditError" class="modal-error" style="display:none;"></div>
+      <input type="text" id="addEditInput" placeholder="" />
+      <div class="modal-buttons">
+        <button id="addEditConfirmBtn">Add</button>
+        <button id="addEditCancelBtn">Cancel</button>
+      </div>
+    </div>
+  </div>
+  <!-- Delete Modal -->
+  <div class="modal-bg" id="modalBg">
+    <div class="modal-box" id="modalBox">
+      <div id="modalText">Are you sure you want to delete?</div>
+      <div class="modal-buttons">
+        <button id="confirmDeleteBtn">Delete</button>
+        <button id="cancelDeleteBtn">Cancel</button>
+      </div>
+    </div>
+  </div>
+  <!-- Confirm Modal (for clear tasks) -->
+  <div class="modal-bg" id="confirmClearModalBg">
+    <div class="modal-box">
+      <div id="confirmClearModalText">Clear all tasks for this employee?</div>
+      <div class="modal-buttons">
+        <button id="confirmClearBtn">Clear</button>
+        <button id="cancelClearBtn">Cancel</button>
+      </div>
+    </div>
+  </div>
+  <script>
+    function saveData() {
+      localStorage.setItem("tmsData", JSON.stringify(companies));
+    }
+    let companies;
+    try {
+      let savedData = localStorage.getItem("tmsData");
+      if (savedData) {
+        companies = JSON.parse(savedData);
+      } else {
+        companies = [
+          { name: 'Company A', employees: [
+            { name: 'Charlie', chat: [] },
+            { name: 'Dina', chat: [] }
+          ]},
+          { name: 'Company B', employees: [
+            { name: 'Eve', chat: [] }
+          ]}
+        ];
+      }
+    } catch(e) { companies = []; }
+    let filteredCompanies = [...companies];
+    let selectedCompanyIndex = null;
+    let filteredEmployees = [];
+    let selectedEmployeeIndex = null;
+    let currPage = 'companies';
+    let editMode = false;
+    let isEmployeeEdit = false;
+    let employeeEditIndex = null;
+    const companySearchInput = document.getElementById('companySearchInput');
+    const companyList = document.getElementById('companyList');
+    const companyAddBtn = document.getElementById('companyAddBtn');
+    const employeesPage = document.getElementById('employeesPage');
+    const companiesPage = document.getElementById('companiesPage');
+    const employeeSearchInput = document.getElementById('employeeSearchInput');
+    const employeeList = document.getElementById('employeeList');
+    const employeeAddBtn = document.getElementById('employeeAddBtn');
+    const empBackBtn = document.getElementById('empBackBtn');
+    const empCompanyTitle = document.getElementById('empCompanyTitle');
+    const chatPage = document.getElementById('chatPage');
+    const chatBackBtn = document.getElementById('chatBackBtn');
+    const chatEmpName = document.getElementById('chatEmpName');
+    const chatBox = document.getElementById('chatBox');
+    const chatInputRow = document.getElementById('chatInputRow');
+    const chatInput = document.getElementById('chatInput');
+    const typeTaskBtn = document.getElementById('typeTaskBtn');
+    const typeReminderBtn = document.getElementById('typeReminderBtn');
+    const addEditModalBg = document.getElementById('addEditModalBg');
+    const addEditModalTitle = document.getElementById('addEditModalTitle');
+    const addEditInput = document.getElementById('addEditInput');
+    const addEditConfirmBtn = document.getElementById('addEditConfirmBtn');
+    const addEditCancelBtn = document.getElementById('addEditCancelBtn');
+    const addEditError = document.getElementById('addEditError');
+    const modalBg = document.getElementById('modalBg');
+    const modalText = document.getElementById('modalText');
+    const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+    const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
+    const companiesBackBtn = document.getElementById('companiesBackBtn');
+    const confirmClearModalBg = document.getElementById('confirmClearModalBg');
+    const confirmClearModalText = document.getElementById('confirmClearModalText');
+    const confirmClearBtn = document.getElementById('confirmClearBtn');
+    const cancelClearBtn = document.getElementById('cancelClearBtn');
+    let clearTasksIndex = null;
+
+    function slideToPage(targetPage) {
+      const order = ['companies', 'employees', 'chat'];
+      let prevPage = currPage;
+      let nextPage = targetPage;
+      let prevIdx = order.indexOf(prevPage);
+      let nextIdx = order.indexOf(nextPage);
+      let pages = {
+        companies: companiesPage,
+        employees: employeesPage,
+        chat: chatPage
+      };
+      Object.values(pages).forEach(pg => {
+        pg.classList.remove('active', 'inactive-left', 'inactive-right');
+      });
+      if (nextIdx > prevIdx) {
+        pages[prevPage].classList.add('inactive-left');
+        pages[nextPage].classList.add('active');
+        pages[nextPage].classList.remove('inactive-right');
+      } else if (nextIdx < prevIdx) {
+        pages[prevPage].classList.add('inactive-right');
+        pages[nextPage].classList.add('active');
+        pages[nextPage].classList.remove('inactive-left');
+      } else {
+        pages[nextPage].classList.add('active');
+      }
+      currPage = targetPage;
+    }
+
+    function filterCompanies() {
+      const val = companySearchInput.value.trim().toLowerCase();
+      if (!val) {
+        filteredCompanies = [...companies];
+      } else {
+        filteredCompanies = companies.filter(c => c.name.toLowerCase().includes(val));
+      }
+    }
+    function renderCompanies() {
+      companyList.innerHTML = '';
+      filteredCompanies.forEach((companyObj, idxFiltered) => {
+        const idx = companies.findIndex(c => c.name === companyObj.name);
+
+        const swipeWrap = document.createElement('div');
+        swipeWrap.className = 'swipe-wrap';
+
+        const swipeActions = document.createElement('div');
+        swipeActions.className = 'swipe-actions';
+        swipeActions.innerHTML = `
+          <button class="swipe-action-btn swipe-edit">Edit</button>
+          <button class="swipe-action-btn swipe-delete">Delete</button>
+        `;
+        swipeWrap.appendChild(swipeActions);
+
+        const item = document.createElement('div');
+        item.className = 'item-row';
+        item.style.position = 'absolute';
+        item.style.left = 0; item.style.top = 0; item.style.right = 0; item.style.bottom = 0;
+
+        const label = document.createElement('span');
+        label.className = 'item-label';
+        label.textContent = companyObj.name;
+        const arrow = document.createElement('span');
+        arrow.className = 'item-arrow';
+        arrow.textContent = '>';
+        arrow.title = 'View Employees';
+        item.appendChild(label);
+        item.appendChild(arrow);
+
+        swipeWrap.appendChild(item);
+
+        // --- FIX: Use addEventListener and hasMoved for navigation ---
+        let hasMoved = false; // New variable per item
+
+        item.addEventListener('click', function(e) {
+          if (hasMoved) return;
+          if (e.target.closest('.swipe-action-btn')) return;
+          showEmployeesPage(idx);
+        });
+
+        enableSwipe(swipeWrap, item, swipeActions, [
+          {
+            btnClass: 'swipe-edit',
+            handler: () => {
+              showAddEditModal('Edit Company', companies[idx].name, true, false);
+              selectedCompanyIndex = idx;
+              closeAllSwipes();
+            }
+          },
+          {
+            btnClass: 'swipe-delete',
+            handler: () => {
+              showModal(idx, false);
+              closeAllSwipes();
+            }
+          }
+        ], hasMoved => { hasMoved = hasMoved; }); // Pass setter
+
+        companyList.appendChild(swipeWrap);
+      });
+      if (filteredCompanies.length === 0) {
+        const emptyMsg = document.createElement('div');
+        emptyMsg.style.padding = "26px";
+        emptyMsg.style.textAlign = "center";
+        emptyMsg.style.color = "var(--burgundy)";
+        emptyMsg.textContent = "No companies found.";
+        companyList.appendChild(emptyMsg);
+      }
+    }
+
+    function filterEmployees() {
+      if (selectedCompanyIndex === null) return;
+      const val = employeeSearchInput.value.trim().toLowerCase();
+      const emps = companies[selectedCompanyIndex].employees;
+      if (!val) {
+        filteredEmployees = [...emps];
+      } else {
+        filteredEmployees = emps.filter(e => e.name.toLowerCase().includes(val));
+      }
+    }
+    function renderEmployees() {
+      employeeList.innerHTML = '';
+      filteredEmployees.forEach((empObj, idxFiltered) => {
+        const emps = companies[selectedCompanyIndex].employees;
+        const idx = emps.findIndex(e => e.name === empObj.name);
+
+        const swipeWrap = document.createElement('div');
+        swipeWrap.className = 'swipe-wrap';
+
+        const swipeActions = document.createElement('div');
+        swipeActions.className = 'swipe-actions';
+        swipeActions.innerHTML = `
+          <button class="swipe-action-btn swipe-edit">Edit</button>
+          <button class="swipe-action-btn swipe-clear">Clear</button>
+          <button class="swipe-action-btn swipe-delete">Delete</button>
+        `;
+        swipeWrap.appendChild(swipeActions);
+
+        const item = document.createElement('div');
+        item.className = 'item-row';
+        item.style.position = 'absolute';
+        item.style.left = 0; item.style.top = 0; item.style.right = 0; item.style.bottom = 0;
+
+        const label = document.createElement('span');
+        label.className = 'item-label';
+        label.textContent = empObj.name;
+        const arrow = document.createElement('span');
+        arrow.className = 'item-arrow';
+        arrow.textContent = '>';
+        arrow.title = 'Tasks/Reminders';
+        item.appendChild(label);
+        item.appendChild(arrow);
+
+        swipeWrap.appendChild(item);
+
+        // --- FIX: Use addEventListener and hasMoved for navigation ---
+        let hasMoved = false;
+
+        item.addEventListener('click', function(e) {
+          if (hasMoved) return;
+          if (e.target.closest('.swipe-action-btn')) return;
+          showChatPage(idx);
+        });
+
+        enableSwipe(swipeWrap, item, swipeActions, [
+          {
+            btnClass: 'swipe-edit',
+            handler: () => {
+              showAddEditModal('Edit Employee', companies[selectedCompanyIndex].employees[idx].name, true, true);
+              employeeEditIndex = idx;
+              closeAllSwipes();
+            }
+          },
+          {
+            btnClass: 'swipe-clear',
+            handler: () => {
+              clearTasksIndex = idx;
+              showClearModal(idx);
+              closeAllSwipes();
+            }
+          },
+          {
+            btnClass: 'swipe-delete',
+            handler: () => {
+              showModal(idx, true);
+              closeAllSwipes();
+            }
+          }
+        ], moved => { hasMoved = moved; });
+
+        employeeList.appendChild(swipeWrap);
+      });
+      if (filteredEmployees.length === 0) {
+        const emptyMsg = document.createElement('div');
+        emptyMsg.style.padding = "26px";
+        emptyMsg.style.textAlign = "center";
+        emptyMsg.style.color = "var(--burgundy)";
+        emptyMsg.textContent = "No employees found.";
+        employeeList.appendChild(emptyMsg);
+      }
+    }
+
+    let currentlySwipedWrap = null;
+    function closeAllSwipes() {
+      document.querySelectorAll('.swipe-wrap.swiped').forEach(r => {
+        const item = r.querySelector('.item-row');
+        if (item) item.style.transform = '';
+        r.classList.remove('swiped');
+      });
+      currentlySwipedWrap = null;
+    }
+
+    // --- CHANGED: enableSwipe now takes a setter function for hasMoved ---
+    function enableSwipe(wrap, item, swipeActions, actions, setHasMoved) {
+      let startX = 0, currentX = 0, swiping = false, threshold = 35;
+      let hasMoved = false;
+      let touchStartTime = 0;
+      let actionsWidth = 0;
+
+      function getActionsWidth() {
+        let width = 0;
+        Array.from(swipeActions.children).forEach(btn => width += btn.offsetWidth);
+        return width || (swipeActions.children.length * 64);
+      }
+
+      item.ontouchstart = function(e) {
+        closeAllSwipes();
+        swiping = true;
+        hasMoved = false;
+        setHasMoved && setHasMoved(false);
+        startX = e.touches[0].clientX;
+        touchStartTime = Date.now();
+        wrap.classList.add('swiping');
+        actionsWidth = getActionsWidth();
+      };
+      item.ontouchmove = function(e) {
+        if (!swiping) return;
+        currentX = e.touches[0].clientX;
+        let diff = Math.min(0, currentX - startX);
+        if (diff < 0) {
+          item.style.transform = `translateX(${diff}px)`;
+          hasMoved = Math.abs(diff) > 5;
+          setHasMoved && setHasMoved(hasMoved);
+        }
+      };
+      item.ontouchend = function(e) {
+        swiping = false;
+        let diff = currentX - startX;
+        let touchDuration = Date.now() - touchStartTime;
+        if (Math.abs(diff) > threshold && hasMoved) {
+          item.style.transform = `translateX(-${actionsWidth}px)`;
+          wrap.classList.add('swiped');
+          currentlySwipedWrap = wrap;
+        } else {
+          item.style.transform = '';
+          wrap.classList.remove('swiped');
+        }
+        wrap.classList.remove('swiping');
+        setTimeout(() => {
+          hasMoved = false;
+          setHasMoved && setHasMoved(false);
+        }, 100);
+      };
+      document.addEventListener('touchstart', function(ev) {
+        if (!wrap.contains(ev.target)) {
+          item.style.transform = '';
+          wrap.classList.remove('swiped');
+        }
+      }, {passive:true});
+      Array.from(swipeActions.children).forEach((btn, i) => {
+        btn.onclick = (ev) => {
+          ev.stopPropagation();
+          actions[i].handler();
+        };
+      });
+    }
+
+    companyAddBtn.onclick = () => {
+      showAddEditModal('Add Company', '', false, false);
+      selectedCompanyIndex = null;
+      employeeEditIndex = null;
+    };
+    employeeAddBtn.onclick = () => {
+      showAddEditModal('Add Employee', '', false, true);
+      employeeEditIndex = null;
+    };
+
+    function showAddEditModal(title, value, isEdit, isEmployee) {
+      addEditModalTitle.textContent = title;
+      addEditInput.value = value;
+      addEditInput.focus();
+      addEditError.style.display = 'none';
+      editMode = isEdit;
+      isEmployeeEdit = isEmployee;
+      addEditModalBg.classList.add('active');
+      setTimeout(() => {
+        addEditInput.focus();
+        addEditInput.select();
+      }, 120);
+    }
+
+    addEditConfirmBtn.onclick = () => {
+      const val = addEditInput.value.trim();
+      if (!val) {
+        addEditError.textContent = isEmployeeEdit ? "Employee name cannot be empty." : "Company name cannot be empty.";
+        addEditError.style.display = 'block';
+        return;
+      }
+      if (isEmployeeEdit) {
+        const emps = companies[selectedCompanyIndex].employees;
+        if (editMode && employeeEditIndex !== null) {
+          emps[employeeEditIndex].name = val;
+        } else {
+          if (emps.some(e => e.name.toLowerCase() === val.toLowerCase())) {
+            addEditError.textContent = "Employee already exists.";
+            addEditError.style.display = 'block';
+            return;
+          }
+          emps.push({ name: val, chat: [] });
+        }
+        filterEmployees();
+        renderEmployees();
+        employeeEditIndex = null;
+      } else {
+        if (editMode && selectedCompanyIndex !== null) {
+          companies[selectedCompanyIndex].name = val;
+        } else {
+          if (companies.some(c => c.name.toLowerCase() === val.toLowerCase())) {
+            addEditError.textContent = "Company already exists.";
+            addEditError.style.display = 'block';
+            return;
+          }
+          companies.push({ name: val, employees: [] });
+        }
+        filterCompanies();
+        renderCompanies();
+      }
+      addEditModalBg.classList.remove('active');
+      editMode = false;
+      isEmployeeEdit = false;
+      selectedCompanyIndex = currPage === 'companies' ? null : selectedCompanyIndex;
+      saveData();
+    };
+
+    addEditCancelBtn.onclick = () => {
+      addEditModalBg.classList.remove('active');
+      editMode = false;
+      isEmployeeEdit = false;
+      selectedCompanyIndex = currPage === 'companies' ? null : selectedCompanyIndex;
+      employeeEditIndex = null;
+    };
+    function showModal(idx, isEmployee) {
+      modalBg.classList.add('active');
+      modalText.textContent = isEmployee
+        ? "Are you sure you want to delete this employee?"
+        : "Are you sure you want to delete this company?";
+      confirmDeleteBtn.onclick = () => {
+        if (isEmployee) {
+          companies[selectedCompanyIndex].employees.splice(idx, 1);
+          filterEmployees();
+          renderEmployees();
+        } else {
+          companies.splice(idx, 1);
+          filterCompanies();
+          renderCompanies();
+        }
+        modalBg.classList.remove('active');
+        saveData();
+      };
+      cancelDeleteBtn.onclick = () => {
+        modalBg.classList.remove('active');
+      };
+    }
+    function showClearModal(idx) {
+      confirmClearModalBg.classList.add('active');
+      confirmClearModalText.textContent = "Clear all tasks & reminders for this employee?";
+      confirmClearBtn.onclick = () => {
+        companies[selectedCompanyIndex].employees[idx].chat = [];
+        confirmClearModalBg.classList.remove('active');
+        saveData();
+      };
+      cancelClearBtn.onclick = () => {
+        confirmClearModalBg.classList.remove('active');
+      };
+    }
+
+    function showCompaniesPage() {
+      filterCompanies();
+      renderCompanies();
+      slideToPage('companies');
+    }
+    function showEmployeesPage(companyIdx) {
+      selectedCompanyIndex = companyIdx;
+      empCompanyTitle.textContent = companies[companyIdx].name + " - Employees";
+      filterEmployees();
+      renderEmployees();
+      slideToPage('employees');
+    }
+    empBackBtn.onclick = () => {
+      showCompaniesPage();
+    };
+
+    let chatType = 'task'; // 'task' or 'reminder'
+    function showChatPage(empIdx) {
+      selectedEmployeeIndex = empIdx;
+      chatEmpName.textContent = companies[selectedCompanyIndex].employees[empIdx].name;
+      renderChat();
+      slideToPage('chat');
+      setTimeout(() => {
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }, 20);
+    }
+    chatBackBtn.onclick = () => {
+      showEmployeesPage(selectedCompanyIndex);
+    };
+    typeTaskBtn.onclick = (e) => {
+      chatType = 'task';
+      typeTaskBtn.classList.add('active');
+      typeReminderBtn.classList.remove('active');
+      chatInput.focus();
+    };
+    typeReminderBtn.onclick = (e) => {
+      chatType = 'reminder';
+      typeTaskBtn.classList.remove('active');
+      typeReminderBtn.classList.add('active');
+      chatInput.focus();
+    };
+    typeTaskBtn.classList.add('active');
+    chatInput.addEventListener('input', function() {
+      this.style.height = 'auto';
+      this.style.height = (this.scrollHeight) + "px";
+    });
+
+    function adjustForKeyboard() {
+      if (!window.visualViewport) return;
+      const vh = window.visualViewport.height;
+      document.querySelector('.container').style.height = vh + "px";
+      if(document.activeElement === chatInput){
+        setTimeout(() => {
+          chatBox.scrollTop = chatBox.scrollHeight;
+        }, 10);
+      }
+    }
+    window.visualViewport && window.visualViewport.addEventListener('resize', adjustForKeyboard);
+    window.addEventListener('resize', adjustForKeyboard);
+    chatInput.addEventListener('focus', function() {
+      setTimeout(() => {
+        adjustForKeyboard();
+        chatInput.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }, 80);
+    });
+
+    chatInputRow.onsubmit = (e) => {
+      e.preventDefault();
+      const msg = chatInput.value.trim();
+      if (!msg) return;
+      const emp = companies[selectedCompanyIndex].employees[selectedEmployeeIndex];
+      emp.chat = emp.chat || [];
+      emp.chat.push({ text: msg, type: chatType, time: Date.now() });
+      chatInput.value = '';
+      chatInput.style.height = 'auto';
+      renderChat();
+      saveData();
+    };
+
+    function formatDateDDMMMMYYYY(dateObj) {
+      const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+      return dateObj.getDate() + " " + months[dateObj.getMonth()] + " " + dateObj.getFullYear();
+    }
+
+    function renderChat() {
+      chatBox.innerHTML = '';
+      const emp = companies[selectedCompanyIndex].employees[selectedEmployeeIndex];
+      let lastMsgDate = '';
+      let popup = null;
+
+      // Helper to remove popup
+      function removePopup() {
+        if (popup && popup.parentNode) popup.parentNode.removeChild(popup);
+        popup = null;
+      }
+
+      // Remove popup if clicking outside
+      document.removeEventListener('click', closePopupHandler);
+      function closePopupHandler(e) {
+        if (popup && !popup.contains(e.target)) {
+          removePopup();
+        }
+      }
+      document.addEventListener('click', closePopupHandler);
+
+      (emp.chat || []).forEach((msgObj, i) => {
+        const msgDate = new Date(msgObj.time);
+        const msgDateStr = formatDateDDMMMMYYYY(msgDate);
+        if (i === 0 || msgDateStr !== lastMsgDate) {
+          const dateDiv = document.createElement('div');
+          dateDiv.className = 'chat-date-divider';
+          const innerDiv = document.createElement('div');
+          innerDiv.className = 'chat-date-divider-inner';
+          innerDiv.textContent = msgDateStr;
+          dateDiv.appendChild(innerDiv);
+          chatBox.appendChild(dateDiv);
+          lastMsgDate = msgDateStr;
+        }
+        const row = document.createElement('div');
+        row.className = 'chat-msg-row';
+        row.style.position = "relative"; // For absolute popup
+
+        const msgDiv = document.createElement('div');
+        msgDiv.className = 'chat-msg ' + (msgObj.type === 'task' ? 'chat-task' : 'chat-reminder');
+        const heading = document.createElement('div');
+        heading.className = 'chat-msg-heading';
+        heading.textContent = msgObj.type === 'task' ? 'Task' : 'Reminder';
+        msgDiv.appendChild(heading);
+
+        const txt = document.createElement('div');
+        txt.textContent = msgObj.text;
+        txt.style.marginBottom = "2px";
+        msgDiv.appendChild(txt);
+
+        const tm = document.createElement('span');
+        tm.className = 'chat-time';
+        const dt = new Date(msgObj.time);
+        tm.textContent = dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        msgDiv.appendChild(tm);
+
+        // Double tap handler (mobile & desktop)
+        let lastTap = 0;
+        msgDiv.addEventListener('touchend', function(e) {
+          const now = Date.now();
+          if (now - lastTap < 380) { // double tap!
+            e.preventDefault();
+            showActionPopup(row, msgDiv, i, msgObj);
+          }
+          lastTap = now;
+        });
+
+        msgDiv.addEventListener('dblclick', function(e) {
+          e.preventDefault();
+          showActionPopup(row, msgDiv, i, msgObj);
+        });
+
+        // Function to show popup
+        function showActionPopup(parentRow, msgElem, idx, msgObj) {
+          removePopup();
+          popup = document.createElement('div');
+          popup.className = 'chat-action-popup';
+
+          // Edit button
+          const editBtn = document.createElement('button');
+          editBtn.textContent = 'Edit';
+          editBtn.className = 'chat-action-btn chat-action-edit';
+          editBtn.onclick = function(ev) {
+            ev.stopPropagation();
+            const newText = prompt("Edit message:", msgObj.text);
+            if (newText !== null && newText.trim() !== "" && newText !== msgObj.text) {
+              emp.chat[idx].text = newText;
+              saveData();
+              renderChat();
+            }
+            removePopup();
+          };
+
+          // Delete button
+          const deleteBtn = document.createElement('button');
+          deleteBtn.textContent = 'Delete';
+          deleteBtn.className = 'chat-action-btn chat-action-delete';
+          deleteBtn.onclick = function(ev) {
+            ev.stopPropagation();
+            if (confirm("Delete this message?")) {
+              emp.chat.splice(idx, 1);
+              saveData();
+              renderChat();
+            }
+            removePopup();
+          };
+
+          popup.appendChild(editBtn);
+          popup.appendChild(deleteBtn);
+          parentRow.appendChild(popup);
+
+          // Position popup (always left of bubble)
+          setTimeout(function() {
+            const msgRect = msgElem.getBoundingClientRect();
+            const rowRect = parentRow.getBoundingClientRect();
+            popup.style.left = (-popup.offsetWidth - 14) + "px";
+            // If too high, move down
+            let topPx = msgElem.offsetTop + 8;
+            if (topPx + popup.offsetHeight > parentRow.offsetHeight)
+              topPx = parentRow.offsetHeight - popup.offsetHeight - 4;
+            popup.style.top = topPx + "px";
+          }, 0);
+        }
+
+        row.appendChild(msgDiv);
+        chatBox.appendChild(row);
+      });
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    filterCompanies();
+    renderCompanies();
+    showCompaniesPage();
+  </script>
+</body>
+</html>
+
+
