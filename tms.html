@@ -1250,6 +1250,7 @@
         // Function to show popup
         function showActionPopup(parentRow, msgElem, idx, msgObj) {
           removePopup();
+          document.removeEventListener('click', closePopupHandler);
           popup = document.createElement('div');
           popup.className = 'chat-action-popup';
 
@@ -1296,6 +1297,10 @@
             if (topPx + popup.offsetHeight > parentRow.offsetHeight)
               topPx = parentRow.offsetHeight - popup.offsetHeight - 4;
             popup.style.top = topPx + "px";
+            // Reattach listener after positioning
+            setTimeout(() => {
+              document.addEventListener('click', closePopupHandler);
+            }, 0);
           }, 0);
         }
 
